@@ -1,0 +1,12 @@
+node_modules/
+.cache/
+out/
+dist/
+.browsers/
+.test-data/
+test-results*/
+playwright-report/
+.DS_Store
+*.log
+.env
+.env.*
