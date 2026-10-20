@@ -15,6 +15,8 @@ const notarize = Boolean(process.env.APPLE_ID && process.env.APPLE_APP_SPECIFIC_
 await build({
   projectDir: root,
   targets: Platform.MAC.createTarget(process.argv.includes('--dir') ? ['dir'] : ['dmg', 'zip'], arch === 'arm64' ? Arch.arm64 : Arch.x64),
+  // 发布由 GitHub Actions 统一上传，避免 electron-builder 在 CI 的 tag 构建中自行发布。
+  publish: 'never',
   config: {
     appId: 'app.octofetch.desktop', productName: 'Octo Fetch',
     directories: { output: 'dist' },
