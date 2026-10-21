@@ -1,6 +1,6 @@
 {
   "name": "octo-fetch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "基于 Puppeteer 的本地网站操作工作台",
   "author": "Octo Fetch",
