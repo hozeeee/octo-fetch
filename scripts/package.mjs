@@ -20,11 +20,12 @@ await build({
   config: {
     appId: 'app.octofetch.desktop', productName: 'Octo Fetch',
     directories: { output: 'dist' },
-    files: ['out/**/*', 'package.json'],
+    files: ['out/**/*', 'assets/icons/icon.png', 'package.json'],
     asar: true,
     electronDist: process.env.OCTO_ELECTRON_DIST || undefined,
     extraResources: [{ from: cache, to: 'browser', filter: ['**/*'] }],
     mac: {
+      icon: 'assets/icons/icon.icns',
       category: 'public.app-category.developer-tools',
       identity: process.env.CSC_LINK || process.env.CSC_NAME ? undefined : null,
       hardenedRuntime: true,
@@ -32,6 +33,8 @@ await build({
       minimumSystemVersion: '13.0',
       // eslint-disable-next-line no-template-curly-in-string -- electron-builder 的文件名宏，不是模板字符串。
       artifactName: '${productName}-${version}-${arch}.${ext}'
-    }
+    },
+    win: { icon: 'assets/icons/icon.ico' },
+    linux: { icon: 'assets/icons/icon.png' }
   }
 })

@@ -2,7 +2,7 @@ import type { Snapshot } from '../shared/model'
 import type { Encryptor } from './storage/store'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { app, BrowserWindow, dialog, Menu, safeStorage, session } from 'electron'
+import { app, BrowserWindow, dialog, Menu, nativeImage, safeStorage, session } from 'electron'
 import { BrowserManager, resolveBrowser } from './browser/manager'
 import { CaptureAccess } from './capture/access'
 import { CaptureService } from './capture/service'
@@ -67,6 +67,10 @@ if (!app.requestSingleInstanceLock()) {
   app.on('activate', () => { window?.show(); window?.focus() })
   app.whenReady().then(async () => {
     app.setName('Octo Fetch')
+    const iconPath = path.join(app.getAppPath(), 'assets/icons/icon.png')
+    const icon = nativeImage.createFromPath(iconPath)
+    if (process.platform === 'darwin') app.dock?.setIcon(icon)
+    app.setAboutPanelOptions({ applicationName: 'Octo Fetch', applicationVersion: app.getVersion(), iconPath })
     const store = new ConfigStore(app.getPath('userData'))
     await store.initialize()
     const encryptor: Encryptor = {
@@ -84,7 +88,7 @@ if (!app.requestSingleInstanceLock()) {
     const secrets = new SecretVault(store.directory, encryptor)
     window = new BrowserWindow({
       width: 1440, height: 960, minWidth: 1000, minHeight: 720, show: false,
-      title: 'Octo Fetch', titleBarStyle: 'hiddenInset', backgroundColor: '#f6f7f9',
+      title: 'Octo Fetch', titleBarStyle: 'hiddenInset', backgroundColor: '#f6f7f9', icon,
       webPreferences: { preload: path.join(__dirname, '../preload/index.js'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true }
     })
     const mainWindow = window

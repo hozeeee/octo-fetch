@@ -28,6 +28,63 @@ function keyring(): Encryptor {
   }
 }
 
+describe('应用图标资源', () => {
+  const directory = path.join(process.cwd(), 'assets/icons')
+  const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+
+  it('运行时 PNG 为带透明通道的 1024 像素图标', async () => {
+    const png = await readFile(path.join(directory, 'icon.png'))
+    expect(png.subarray(0, 8)).toEqual(pngSignature)
+    expect(png.readUInt32BE(16)).toBe(1024)
+    expect(png.readUInt32BE(20)).toBe(1024)
+    expect(png[25]).toBe(6)
+  })
+
+  it('macOS ICNS 包含标准和 Retina 图标，条目长度与 PNG 尺寸一致', async () => {
+    const icns = await readFile(path.join(directory, 'icon.icns'))
+    expect(icns.toString('ascii', 0, 4)).toBe('icns')
+    expect(icns.readUInt32BE(4)).toBe(icns.length)
+    const sizes: Record<string, number> = { icp4: 16, icp5: 32, icp6: 64, ic07: 128, ic08: 256, ic09: 512, ic10: 1024, ic11: 32, ic12: 64, ic13: 256, ic14: 512 }
+    const entries: string[] = []
+    let offset = 8
+    while (offset < icns.length) {
+      const kind = icns.toString('ascii', offset, offset + 4)
+      const length = icns.readUInt32BE(offset + 4)
+      expect(length).toBeGreaterThan(8)
+      expect(offset + length).toBeLessThanOrEqual(icns.length)
+      const png = icns.subarray(offset + 8, offset + length)
+      expect(png.subarray(0, 8)).toEqual(pngSignature)
+      expect(png.readUInt32BE(16)).toBe(sizes[kind])
+      expect(png.readUInt32BE(20)).toBe(sizes[kind])
+      entries.push(kind)
+      offset += length
+    }
+    expect(offset).toBe(icns.length)
+    expect(entries.sort()).toEqual(Object.keys(sizes).sort())
+  })
+
+  it('Windows ICO 包含 16 至 256 像素的七种尺寸', async () => {
+    const ico = await readFile(path.join(directory, 'icon.ico'))
+    expect(ico.readUInt16LE(0)).toBe(0)
+    expect(ico.readUInt16LE(2)).toBe(1)
+    expect(ico.readUInt16LE(4)).toBe(7)
+    const sizes: number[] = []
+    for (let index = 0; index < 7; index++) {
+      const entry = 6 + index * 16
+      const size = ico[entry] || 256
+      expect(ico[entry + 1] || 256).toBe(size)
+      const offset = ico.readUInt32LE(entry + 12)
+      const length = ico.readUInt32LE(entry + 8)
+      expect(offset + length).toBeLessThanOrEqual(ico.length)
+      expect(ico.subarray(offset, offset + 8)).toEqual(pngSignature)
+      expect(ico.readUInt32BE(offset + 16)).toBe(size)
+      expect(ico.readUInt32BE(offset + 20)).toBe(size)
+      sizes.push(size)
+    }
+    expect(sizes).toEqual([16, 24, 32, 48, 64, 128, 256])
+  })
+})
+
 describe('输入与 Cookie', () => {
   it.each(['file:///tmp/private', 'javascript:alert(1)', 'https://user:pass@example.com', 'data:text/html,a', 'invalid'])('拒绝不安全 URL %s', (url) => { expect(urlSchema.safeParse(url).success).toBe(false) })
   it('允许正常网址和本地 HTTP 测试站', () => {

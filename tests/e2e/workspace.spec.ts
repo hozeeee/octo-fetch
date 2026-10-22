@@ -3,6 +3,21 @@ import path from 'node:path'
 import { expect, test } from '@playwright/test'
 import { addSite, command, launchDesktop, remoteClick, state, stopAll, testSite } from './helpers'
 
+test('应用图标可从开发目录或打包 ASAR 中加载', async () => {
+  const { application, page } = await launchDesktop()
+  try {
+    const info = await application.evaluate(async ({ app, nativeImage, BrowserWindow }) => {
+      const path = await import('node:path')
+      const icon = nativeImage.createFromPath(path.join(app.getAppPath(), 'assets/icons/icon.png'))
+      return { empty: icon.isEmpty(), size: icon.getSize(), title: BrowserWindow.getAllWindows()[0].getTitle(), cornerAlpha: icon.toBitmap()[3] }
+    })
+    expect(info.empty).toBe(false)
+    expect(info.size).toEqual({ width: 1024, height: 1024 })
+    expect(info.title).toBe('Octo Fetch')
+    expect(info.cornerAlpha).toBe(0)
+  } finally { await stopAll(application, page) }
+})
+
 test('独立会话、实时画面、中文输入、弹窗、Cookie 及重启恢复', async () => {
   const website = await testSite()
   let desktop: Awaited<ReturnType<typeof launchDesktop>> | undefined
